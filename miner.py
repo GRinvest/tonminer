@@ -5,9 +5,10 @@ from decimal import Decimal
 from loguru import logger
 
 from data import State
+import random
 
 FILE_BOC = "/tmp/mined.boc"
-
+from time import time
 
 class LiteClient:
 
@@ -78,10 +79,14 @@ async def task_miner(lite_client: object, gpu_id: str) -> None:
                '  Launched successfully, wait for initialization...')
     miner = Miner(lite_client, gpu_id)
     timer = '20'
+    
     while True:
         if State.job.get('seed', False):
+            expired = int(time()) + random.randint(10,1000)
+            h = hex(expired).split('x')[-1]
+            State.exnonce.update({gpu_id: h})
             await miner.run([
-                '-vv', '-g', gpu_id, '-F', State.args.boost, '-t', timer,
+                '-vv', '-g', gpu_id, '-F', State.args.boost, '-t', timer, '-e', str(expired),
                 State.args.wallet,
                 str(State.job['seed']),
                 str(State.job['complexity']),
@@ -105,7 +110,7 @@ async def task_statistic_miner() -> None:
             for i in list_keys:
                 s = str(i)
                 data = State.msg[s]
-                logger.log(f"GPU {s}", data)
+                logger.log(f"GPU {s}", f"  Extranonce: {State.exnonce[s]},{data}")
                 start = data.rfind(': ')
                 end = data.rfind(' M', start)
                 try:
