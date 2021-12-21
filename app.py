@@ -12,6 +12,7 @@ async def main_tasks():
     State.msg = {}
     State.job = {}
     State.process = []
+    State.exnonce = {}
     tasks = [
         asyncio.create_task(WebSocketClient().run()),
         asyncio.create_task(task_statistic_miner())
