@@ -3,3 +3,4 @@ __pycache__
 Pipfile.lock
 build
 test*
+*.tar.gz
