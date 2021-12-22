@@ -62,9 +62,10 @@ class Miner:
     async def __rest_output(self, data: str) -> None:
         start = data.rfind('hashes computed:')
         end = data.find(']', start)
-        State.msg.update({self.gpu_id: f"  {data[start:end]}"})
+        State.msg.update({self.gpu_id: f"{data[start:end]}"})
 
     async def __submit(self, data: str) -> None:
+        await self.lite_client.run('last', 5)
         await self.lite_client.run("sendfile " + FILE_BOC, 30)
         start = data.find('FOUND!')
         end = data.find('[', start)
@@ -110,7 +111,7 @@ async def task_statistic_miner() -> None:
             for i in list_keys:
                 s = str(i)
                 data = State.msg[s]
-                logger.log(f"GPU {s}", f"  Extranonce: {State.exnonce[s]},{data}")
+                logger.log(f"GPU {s}", f"  Extranonce: {State.exnonce[s]}, {data}")
                 start = data.rfind(': ')
                 end = data.rfind(' M', start)
                 try:
