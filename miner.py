@@ -1,36 +1,49 @@
 import asyncio
 import pathlib
+import random
 from decimal import Decimal
 
 from loguru import logger
 
 from data import State
-import random
 
-FILE_BOC = "/tmp/mined.boc"
+PATH_FILE_BOC = "/home/user/"
+FILE_BOC = "/home/user/mined.boc"
 from time import time
+
 
 class LiteClient:
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self):
+        self.app_path = State.args.liteclient
+        self.config_path = State.args.сonfig
 
-    async def run(self, cmd: str, timeout: int = 2) -> None:
-        args = ['--global-config', State.args.сonfig,
-                "--verbosity", "0", "--cmd", cmd]
-        process = await asyncio.create_subprocess_exec(State.args.lite_client, *args, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
-        try:
-            await asyncio.wait_for(process.communicate(), timeout=timeout)
-        except asyncio.exceptions.TimeoutError:
-            logger.debug(f"Command {cmd} timed out")
-        except Exception as e:
-            logger.error(f"Lite Client Exception {e}")
-            raise Exception
-        finally:
-            try:
-                process.kill()
-            except OSError:
-                pass
+    async def run(self, cmd, timeout=0):
+        args = ['--global-config', self.config_path,
+                        "--verbosity", "0", "--cmd", cmd]
+        if timeout == 0:
+            timeout = 5
+            while True:
+                process = await asyncio.create_subprocess_exec(self.app_path, *args, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                try:
+                    stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+                except asyncio.exceptions.TimeoutError:
+                    logger.warning(f"Command {cmd} timed out: {timeout} seconds")
+                    if timeout <= 30:
+                        timeout += 1
+                else:
+                    if stderr:
+                        logger.error(f"Error lite-client: {stderr.decode()}")
+                        timeout = 5
+                        await asyncio.sleep(3)
+                        continue
+                    else:
+                        return stdout.decode()
+                finally:
+                    try:
+                        process.terminate()
+                    except OSError:
+                        pass
 
 
 class Miner:
@@ -65,13 +78,18 @@ class Miner:
         State.msg.update({self.gpu_id: f"{data[start:end]}"})
 
     async def __submit(self, data: str) -> None:
-        await self.lite_client.run('last', 5)
-        await self.lite_client.run("sendfile " + FILE_BOC, 30)
+        import os
+        await self.lite_client.run('last')
+        res = await self.lite_client.run("sendfile " + FILE_BOC)
         start = data.find('FOUND!')
         end = data.find('[', start)
         msg = data[start:end-1]
         msg = msg.replace('\n', ' ')
         logger.success('SOLUTION ' + msg)
+        print(res)
+        file_oldname = os.path.join(PATH_FILE_BOC, "mined.boc")
+        file_newname_newfile = os.path.join(PATH_FILE_BOC, f"mined_{self.gpu_id}_{int(time())}.boc")
+        os.rename(file_oldname, file_newname_newfile)
 
 
 async def task_miner(lite_client: object, gpu_id: str) -> None:

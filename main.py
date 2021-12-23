@@ -75,7 +75,7 @@ def createParser():
     path = BASE_DIR / State.app["lite_client"]
     parent_group.add_argument(
         '-l',
-        dest="lite_client",
+        dest="liteclient",
         default=path,
         metavar="lite-client",
         help=f'path lite-client (default: {path})'
