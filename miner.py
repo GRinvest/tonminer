@@ -28,7 +28,7 @@ class LiteClient:
                 try:
                     stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
                 except asyncio.exceptions.TimeoutError:
-                    logger.debug(f"Command {cmd} timed out: {timeout} seconds")
+                    logger.warning(f"Command {cmd} timed out: {timeout} seconds")
                     if timeout <= 30:
                         timeout += 1
                 else:
