@@ -10,10 +10,14 @@ from data import State
 
 class WebSocketClient:
 
+    def __init__(self):
+        self.ws_connect = None
+
     async def __fetch(self):
         try:
             async with ClientSession() as session:
                 async with session.ws_connect(f'ws://{State.args.host}:{State.args.port}/ws/connect', heartbeat=5) as ws:
+                    self.ws_connect = ws
                     logger.log(
                         'PROXY', f"  Connected host {State.args.host}:{State.args.port} Ok, Your wallet adress for reward: {State.args.wallet}")
                     async for msg in ws:
@@ -34,30 +38,38 @@ class WebSocketClient:
         except Exception as err:
             logger.exception(f"Error fetch Exception {err}")
         finally:
-            State.msg = {}
-            State.job = {}
-            logger.log(
-                'PROXY', f'  Disconnect host {State.args.host}:{State.args.port}')
-            if len(State.process):
-                for proc in State.process:
-                    try:
-                        proc.terminate()
-                    except OSError:
-                        pass
+            if State.args.benchmark is False:
+                State.msg = {}
+                State.job = {}
+                logger.log(
+                    'PROXY', f'  Disconnect host {State.args.host}:{State.args.port}')
+                if len(State.process):
+                    for proc in State.process:
+                        try:
+                            proc.terminate()
+                        except OSError:
+                            pass
 
     async def run(self):
         logger.level("NEW JOB", no=60)
         logger.level("PROXY", no=60, color="<yellow>")
         while True:
             await self.__fetch()
-            await asyncio.sleep(10)
+            if State.args.benchmark:
+                break
+            else:
+                await asyncio.sleep(10)
 
     async def job_creation(self, data):
-        logger.log("NEW JOB", f"seed: {data['seed']}, Giver: {data['giver']}")
-        State.job = data
-        if len(State.process):
-            for proc in State.process:
-                try:
-                    proc.terminate()
-                except OSError:
-                    pass
+        if State.args.benchmark:
+            State.job = data
+            await self.ws_connect.close()
+        else:
+            logger.log("NEW JOB", f"seed: {data['seed']}, Giver: {data['giver']}")
+            State.job = data
+            if len(State.process):
+                for proc in State.process:
+                    try:
+                        proc.terminate()
+                    except OSError:
+                        pass

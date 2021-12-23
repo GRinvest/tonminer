@@ -55,16 +55,28 @@ class Miner:
 
     async def run(self, args) -> None:
         process = await asyncio.create_subprocess_exec(self.app_path, *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
-        State.process.append(process)
+        if State.args.benchmark is False:
+            State.process.append(process)
         try:
             stdout, _ = await process.communicate()
         except Exception as err:
             logger.error(f"Miner run failed: {err}")
             raise Exception
         else:
-            await self.__distribution(stdout.decode())
+            if State.args.benchmark:
+                await self.__save_benchmark(stdout.decode())
+            else:
+                await self.__distribution(stdout.decode())
         finally:
-            State.process.remove(process)
+            if State.args.benchmark is False:
+                State.process.remove(process)
+        
+    async def __save_benchmark(self, data: str) -> None:
+        start = data.rfind('best boost factor:')
+        end = data.find('[', start)
+        boost_factor = int(data[start:end-1].split()[3])
+        State.benchmark.update({self.gpu_id: boost_factor})
+        State.msg.update({self.gpu_id: boost_factor})
 
     async def __distribution(self, data: str) -> None:
         if 'FOUND!' in data:
@@ -75,7 +87,7 @@ class Miner:
     async def __rest_output(self, data: str) -> None:
         start = data.rfind('hashes computed:')
         end = data.find(']', start)
-        State.msg.update({self.gpu_id: f"{data[start:end]}"})
+        State.msg.update({self.gpu_id: data[start:end]})
 
     async def __submit(self, data: str) -> None:
         import os
@@ -125,22 +137,48 @@ async def task_statistic_miner() -> None:
                 "   -------------------------------------------------------------------------------------------------------")
             list_keys = list(int(i) for i in State.msg.keys())
             list_keys.sort()
-            list_hr = []
-            for i in list_keys:
-                s = str(i)
-                data = State.msg[s]
-                logger.log(f"GPU {s}", f"  Extranonce: {State.exnonce[s]}, {data}")
-                start = data.rfind(': ')
-                end = data.rfind(' M', start)
-                try:
-                    hr = Decimal(data[start+2:end])
-                except Exception as e:
-                    logger.error(f"Error decoding {e}")
-                else:
-                    list_hr.append(hr)
-            if len(list_hr):
-                logger.info(
-                    f"   Total average hashrate: {sum(list_hr)} Mhash/s")
-            await asyncio.sleep(30)
+            if State.args.benchmark:
+                for i in list_keys:
+                    s = str(i)
+                    data = State.msg[s]
+                    logger.log(f"GPU {s}", f"  Best Boost Factor: {data}")
+                break
+            else:
+                list_hr = []
+                for i in list_keys:
+                    s = str(i)
+                    data = State.msg[s]
+                    logger.log(f"GPU {s}", f"  Extranonce: {State.exnonce[s]}, {data}")
+                    start = data.rfind(': ')
+                    end = data.rfind(' M', start)
+                    try:
+                        hr = Decimal(data[start+2:end])
+                    except Exception as e:
+                        logger.error(f"Error decoding {e}")
+                    else:
+                        list_hr.append(hr)
+                if len(list_hr):
+                    logger.info(
+                        f"   Total average hashrate: {sum(list_hr)} Mhash/s")
+                await asyncio.sleep(30)
         else:
             await asyncio.sleep(2)
+
+
+async def task_benchmark(lite_client: object, gpu_id: str) -> None:
+    logger.level("GPU " + gpu_id, no=60)
+    logger.log("GPU " + gpu_id, '  Launched benchmark, please wait benchmarks...')
+    miner = Miner(lite_client, gpu_id)
+    while True:
+        if State.job.get('seed', False):
+            await miner.run([
+                '-vv', '-B', '-g', gpu_id, '-t', '300',
+                State.args.wallet,
+                str(State.job['seed']),
+                str(State.job['complexity']),
+                str(State.job['iterations'])
+            ])
+            logger.log("GPU " + gpu_id, '  Benchmark complited')
+            break
+        else:
+            await asyncio.sleep(1)
