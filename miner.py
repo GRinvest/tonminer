@@ -91,6 +91,7 @@ class Miner:
 
     async def __submit(self, data: str) -> None:
         import os
+        logger.success('Yep!')
         await self.lite_client.run('last')
         res = await self.lite_client.run("sendfile " + FILE_BOC)
         start = data.find('FOUND!')
