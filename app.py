@@ -18,6 +18,7 @@ async def main_tasks():
     State.job = {}
     State.process = []
     State.exnonce = {}
+    State.reconnect = 0
     tasks = [
             asyncio.create_task(WebSocketClient().run()),
             asyncio.create_task(task_statistic_miner())

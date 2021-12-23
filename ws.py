@@ -24,6 +24,7 @@ class WebSocketClient:
                         if msg.type == WSMsgType.TEXT:
                             msg_json = json.loads(msg.data)
                             if msg_json['ok']:
+                                State.reconnect = 0
                                 await self.job_creation(msg_json['data'])
                             else:
                                 logger.error(
@@ -39,16 +40,16 @@ class WebSocketClient:
             logger.exception(f"Error fetch Exception {err}")
         finally:
             if State.args.benchmark is False:
-                State.msg = {}
-                State.job = {}
-                logger.log(
-                    'PROXY', f'  Disconnect host {State.args.host}:{State.args.port}')
-                if len(State.process):
-                    for proc in State.process:
-                        try:
-                            proc.terminate()
-                        except OSError:
-                            pass
+                logger.log('PROXY', f'  Disconnect host {State.args.host}:{State.args.port} Reconnection: {State.reconnect}')
+                if State.reconnect > 10:
+                    State.msg = {}
+                    State.job = {}
+                    if len(State.process):
+                        for proc in State.process:
+                            try:
+                                proc.terminate()
+                            except OSError:
+                                pass
 
     async def run(self):
         logger.level("NEW JOB", no=60)
@@ -58,6 +59,7 @@ class WebSocketClient:
             if State.args.benchmark:
                 break
             else:
+                State.reconnect += 1
                 await asyncio.sleep(10)
 
     async def job_creation(self, data):
@@ -65,11 +67,15 @@ class WebSocketClient:
             State.job = data
             await self.ws_connect.close()
         else:
-            logger.log("NEW JOB", f"seed: {data['seed']}, Giver: {data['giver']}")
-            State.job = data
-            if len(State.process):
-                for proc in State.process:
-                    try:
-                        proc.terminate()
-                    except OSError:
-                        pass
+            try:
+                logger.log("NEW JOB", f"seed: {data['seed']}, Giver: {data['giver']}")
+            except KeyError:
+                pass
+            else:
+                State.job = data
+                if len(State.process):
+                    for proc in State.process:
+                        try:
+                            proc.terminate()
+                        except OSError:
+                            pass
