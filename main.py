@@ -110,6 +110,13 @@ def createParser():
         metavar='boost-factor',
         help='1..65536, the multiplier for throughput, affects the number of hashes processed per iteration on the GPU (default: 64)'
     )
+    parent_group.add_argument(
+        '-B',
+        dest="benchmark",
+        action='store_true',
+        default=False,
+        help='Start benchmarking: Optimal Boost Factor (default: False)'
+    )
     parser.add_argument('--help', '-h', action='help', help='This is help')
     parser.add_argument('--version', '-v', action='version',
                         help='Print version number', version='%(prog)s {}'.format(VERSION))
@@ -132,4 +139,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         logger.warning("Close program Ctrl C")
     except Exception as e:
-        print(e)
+        logger.exception(e)
