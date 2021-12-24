@@ -9,7 +9,7 @@ from loguru import logger
 from app import main_tasks
 from data import State
 
-VERSION = "0.1.1"
+VERSION = "0.1.5"
 
 BASE_DIR = pathlib.Path(__file__).parent
 
