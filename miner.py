@@ -1,3 +1,4 @@
+from time import time
 import asyncio
 import pathlib
 import random
@@ -9,7 +10,6 @@ from data import State
 
 PATH_FILE_BOC = "/home/user/"
 FILE_BOC = "/home/user/mined.boc"
-from time import time
 
 
 class LiteClient:
@@ -20,7 +20,7 @@ class LiteClient:
 
     async def run(self, cmd, timeout=0):
         args = ['--global-config', self.config_path,
-                        "--verbosity", "0", "--cmd", cmd]
+                "--verbosity", "0", "--cmd", cmd]
         if timeout == 0:
             timeout = 5
             while True:
@@ -28,7 +28,8 @@ class LiteClient:
                 try:
                     stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
                 except asyncio.exceptions.TimeoutError:
-                    logger.warning(f"Command {cmd} timed out: {timeout} seconds")
+                    logger.warning(
+                        f"Command {cmd} timed out: {timeout} seconds")
                     if timeout <= 30:
                         timeout += 1
                 else:
@@ -70,7 +71,7 @@ class Miner:
         finally:
             if State.args.benchmark is False:
                 State.process.remove(process)
-        
+
     async def __save_benchmark(self, data: str) -> None:
         start = data.rfind('best boost factor:')
         end = data.find('[', start)
@@ -101,7 +102,8 @@ class Miner:
         logger.success('SOLUTION ' + msg)
         print(res)
         file_oldname = os.path.join(PATH_FILE_BOC, "mined.boc")
-        file_newname_newfile = os.path.join(PATH_FILE_BOC, f"mined_{self.gpu_id}_{int(time())}.boc")
+        file_newname_newfile = os.path.join(
+            PATH_FILE_BOC, f"mined_{self.gpu_id}_{int(time())}.boc")
         os.rename(file_oldname, file_newname_newfile)
 
 
@@ -111,14 +113,15 @@ async def task_miner(lite_client: object, gpu_id: str) -> None:
                '  Launched successfully, wait for initialization...')
     miner = Miner(lite_client, gpu_id)
     timer = '20'
-    
+
     while True:
         if State.job.get('seed', False):
-            expired = int(time()) + random.randint(10,1000)
+            expired = int(time()) + random.randint(10, 1000)
             h = hex(expired).split('x')[-1]
             State.exnonce.update({gpu_id: h})
             await miner.run([
-                '-vv', '-g', gpu_id, '-F', State.args.boost, '-t', timer, '-e', str(expired),
+                '-vv', '-g', gpu_id, '-F', State.args.boost, '-t', timer, '-e', str(
+                    expired),
                 State.args.wallet,
                 str(State.job['seed']),
                 str(State.job['complexity']),
@@ -149,7 +152,8 @@ async def task_statistic_miner() -> None:
                 for i in list_keys:
                     s = str(i)
                     data = State.msg[s]
-                    logger.log(f"GPU {s}", f"  Extranonce: {State.exnonce[s]}, {data}")
+                    logger.log(
+                        f"GPU {s}", f"  Extranonce: {State.exnonce[s]}, {data}")
                     start = data.rfind(': ')
                     end = data.rfind(' M', start)
                     try:
@@ -168,7 +172,8 @@ async def task_statistic_miner() -> None:
 
 async def task_benchmark(lite_client: object, gpu_id: str) -> None:
     logger.level("GPU " + gpu_id, no=60)
-    logger.log("GPU " + gpu_id, '  Launched benchmark, please wait benchmarks...')
+    logger.log("GPU " + gpu_id,
+               '  Launched benchmark, please wait benchmarks...')
     miner = Miner(lite_client, gpu_id)
     while True:
         if State.job.get('seed', False):
