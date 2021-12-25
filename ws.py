@@ -40,7 +40,8 @@ class WebSocketClient:
             logger.exception(f"Error fetch Exception {err}")
         finally:
             if State.args.benchmark is False:
-                logger.log('PROXY', f'  Disconnect host {State.args.host}:{State.args.port} Reconnection: {State.reconnect}')
+                logger.log(
+                    'PROXY', f'  Disconnect host {State.args.host}:{State.args.port} Reconnection: {State.reconnect}')
                 if State.reconnect > 10:
                     State.msg = {}
                     State.job = {}
@@ -68,7 +69,8 @@ class WebSocketClient:
             await self.ws_connect.close()
         else:
             try:
-                logger.log("NEW JOB", f"seed: {data['seed']}, Giver: {data['giver']}")
+                logger.log(
+                    "NEW JOB", f"seed: {data['seed']}, Giver: {data['giver']}")
             except KeyError:
                 pass
             else:
