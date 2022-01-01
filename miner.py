@@ -1,50 +1,51 @@
-from time import time
 import asyncio
 import pathlib
 import random
 from decimal import Decimal
+from time import time
 
 from loguru import logger
 
 from data import State
 
-PATH_FILE_BOC = "/home/user/"
-FILE_BOC = "/home/user/mined.boc"
+PATH_FILE_BOC = "/var/log/"
+FILE_BOC = "/var/log/mined.boc"
 
 
 class LiteClient:
-
-    def __init__(self):
-        self.app_path = State.args.liteclient
-        self.config_path = State.args.сonfig
+    STATE_INDEX = 0
 
     async def run(self, cmd, timeout=0):
-        args = ['--global-config', self.config_path,
-                "--verbosity", "0", "--cmd", cmd]
         if timeout == 0:
             timeout = 5
-            while True:
-                process = await asyncio.create_subprocess_exec(self.app_path, *args, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-                try:
-                    stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
-                except asyncio.exceptions.TimeoutError:
-                    logger.warning(
-                        f"Command {cmd} timed out: {timeout} seconds")
-                    if timeout <= 30:
-                        timeout += 1
+        while True:
+            args = ['--global-config', State.args.сonfig,
+                    "--verbosity", "0", '-i', str(LiteClient.STATE_INDEX), "--cmd", cmd]
+            process = await asyncio.create_subprocess_exec(State.args.liteclient, *args, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+            try:
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+            except asyncio.exceptions.TimeoutError:
+                logger.warning(f"Command {cmd} timed out: {timeout} seconds")
+                if LiteClient.STATE_INDEX > 8:
+                    LiteClient.STATE_INDEX = 0
                 else:
-                    if stderr:
-                        logger.error(f"Error lite-client: {stderr.decode()}")
-                        timeout = 5
-                        await asyncio.sleep(3)
-                        continue
-                    else:
-                        return stdout.decode()
-                finally:
-                    try:
-                        process.terminate()
-                    except OSError:
-                        pass
+                    LiteClient.STATE_INDEX += 1
+                if timeout <= 30:
+                    timeout += 1
+                continue
+            else:
+                if stderr:
+                    logger.error(f"Error lite-client: {stderr.decode()}")
+                    timeout = 5
+                    await asyncio.sleep(3)
+                    continue
+                else:
+                    return stdout.decode()
+            finally:
+                try:
+                    process.terminate()
+                except OSError:
+                    pass
 
 
 class Miner:
@@ -94,13 +95,12 @@ class Miner:
         import os
         logger.success('Yep!')
         await self.lite_client.run('last')
-        res = await self.lite_client.run("sendfile " + FILE_BOC)
+        await self.lite_client.run("sendfile " + FILE_BOC)
         start = data.find('FOUND!')
         end = data.find('[', start)
         msg = data[start:end-1]
         msg = msg.replace('\n', ' ')
         logger.success('SOLUTION ' + msg)
-        print(res)
         file_oldname = os.path.join(PATH_FILE_BOC, "mined.boc")
         file_newname_newfile = os.path.join(
             PATH_FILE_BOC, f"mined_{self.gpu_id}_{int(time())}.boc")
@@ -116,9 +116,7 @@ async def task_miner(lite_client: object, gpu_id: str) -> None:
 
     while True:
         if State.job.get('seed', False):
-            expired = int(time()) + random.randint(10, 1000)
-            h = hex(expired).split('x')[-1]
-            State.exnonce.update({gpu_id: h})
+            expired = int(time()) + 800
             await miner.run([
                 '-vv', '-g', gpu_id, '-F', State.args.boost, '-t', timer, '-e', str(
                     expired),
@@ -153,7 +151,7 @@ async def task_statistic_miner() -> None:
                     s = str(i)
                     data = State.msg[s]
                     logger.log(
-                        f"GPU {s}", f"  Extranonce: {State.exnonce[s]}, {data}")
+                        f"GPU {s}", f"  {data}")
                     start = data.rfind(': ')
                     end = data.rfind(' M', start)
                     try:
@@ -178,7 +176,7 @@ async def task_benchmark(lite_client: object, gpu_id: str) -> None:
     while True:
         if State.job.get('seed', False):
             await miner.run([
-                '-vv', '-B', '-g', gpu_id, '-t', '300',
+                '-vv', '-B', '-g', gpu_id, '-t', '180',
                 State.args.wallet,
                 str(State.job['seed']),
                 str(State.job['complexity']),
