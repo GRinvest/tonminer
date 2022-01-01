@@ -9,7 +9,7 @@ from ws import WebSocketClient
 
 def save_benchmark():
     import json
-    with open('/home/user/gpu_benchmark.json', 'w', encoding='utf-8') as f:
+    with open('/var/log/gpu_benchmark.json', 'w', encoding='utf-8') as f:
         json.dump(State.benchmark, f, ensure_ascii=False, indent=4)
 
 
