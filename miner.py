@@ -116,7 +116,7 @@ async def task_miner(lite_client: object, gpu_id: str) -> None:
 
     while True:
         if State.job.get('seed', False):
-            expired = int(time()) + 800
+            expired = int(time()) + random.randint(10,1000)
             await miner.run([
                 '-vv', '-g', gpu_id, '-F', State.args.boost, '-t', timer, '-e', str(
                     expired),
