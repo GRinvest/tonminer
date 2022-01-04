@@ -10,6 +10,7 @@ loguru = "*"
 pyinstaller = "*"
 nvidia-ml-py = "*"
 psutil = "*"
+pyadl = "*"
 
 [dev-packages]
 autopep8 = "*"
