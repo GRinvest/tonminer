@@ -10,28 +10,50 @@ from pynvml import nvmlDeviceGetCount, nvmlInit
 from app import main_tasks
 from data import State
 
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 
 BASE_DIR = pathlib.Path(__file__).parent
 
 
 def init():
-    nvmlInit()
-    os.chdir(sys._MEIPASS)
-    State.gpu_count = nvmlDeviceGetCount()
+    if sys.platform == "linux" or sys.platform == "linux2":
+        os.chdir(sys._MEIPASS)
+        try:
+            from pyadl import ADLManager
+        except Exception as err:
+            from pynvml import nvmlDeviceGetCount, nvmlInit, nvmlShutdown
+            nvmlInit()
+            State.gpu_count = nvmlDeviceGetCount()
+            State.miner = BASE_DIR / "pow-miner-cuda"
+            nvmlShutdown()
+        else:
+            State.gpu_count = len(ADLManager.getInstance().getDevices())
+            State.miner = BASE_DIR / "pow-miner-opencl"
+    elif sys.platform == "win32":
+        from multiprocessing import freeze_support
 
+        import wmi
 
-def logger_init():
+        freeze_support()
+        os.chdir(sys._MEIPASS)
+        computer = wmi.WMI()
+        gpu_info = computer.Win32_VideoController()
+        State.gpu_count = len(gpu_info)
+        if "AMD" in gpu_info[0].VideoProcessor:
+            State.miner =  BASE_DIR / "pow-miner-opencl.exe"
+        else:
+            State.miner = BASE_DIR / "pow-miner-cuda.exe"
+
+def init_logger():
     logger.remove()
     logger.add(sys.stderr, colorize=True,
                format="<green>{level}</green>:     <level>{message}</level>", level=State.args.logger.upper(), enqueue=True)
-    logger.add("/var/log/tonminer-cuda.log", rotation="3 MB")
-
+    logger.add("/var/log/tonminer-proxy.log", rotation="3 MB")
 
 def createParser():
 
     parser = argparse.ArgumentParser(
-        prog='tonminer-cuda',
+        prog='tonminer-proxy',
         description="Miner Toncoin for ton-proxy",
         epilog='(c) GRinvest 2021. The author of the program, as always, assumes no responsibility for anything.',
         add_help=False
@@ -61,13 +83,12 @@ def createParser():
         metavar="lite-client",
         help=f'path lite-client (default: {path})'
     )
-    path = BASE_DIR / 'pow-miner-cuda'
     parent_group.add_argument(
         '-M',
         dest="miner",
-        default=path,
+        default=State.miner,
         metavar="miner",
-        help=f'path miner (default: {path})'
+        help=f'path miner (default: {State.miner})'
     )
     parent_group.add_argument(
         '-H',
@@ -111,7 +132,7 @@ if __name__ == '__main__':
     init()
     parser = createParser()
     State.args = parser.parse_args()
-    logger_init()
+    init_logger()
     try:
         asyncio.run(main_tasks())
     except KeyboardInterrupt:

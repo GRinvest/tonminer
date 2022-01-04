@@ -1,23 +1,23 @@
 <h1 align="center">Tonminer</h1>
-<h3 align="center">Tonminer-cuda for ton-proxy (solomining)</h3>
+<h3 align="center">Tonminer-proxy for ton-proxy (solomining)</h3>
 <p align="center">Optimized from the <a href="https://github.com/tontechio/pow-miner-gpu">original client</a> ,
 miner for <a href="https://github.com/GRinvest/ton-proxy">ton-proxy</a> </p>
 <hr />
 <p>The installation of the miner is quite simple, you will need:</p>
 <ul>
- <li>Ubuntu system (from 18.04) with Nvidia video cards</li>
+ <li>Ubuntu system (from 18.04)</li>
  <li>Installed on a separate server, with an external ip address <a href="https://github.com/GRinvest/ton-proxy">ton-proxy</a></li>
 </ul>
 <p> Login to your rig and enter commands in the terminal:</p>
 <pre><code>
-mkdir tonminer-cuda
-cd tonminer-cuda
-wget https://github.com/GRinvest/tonminer/releases/download/0.1.6/tonminer-cuda.tar.gz
-tar xvf tonminer-cuda.tar.gz
-rm tonminer-cuda.tar.gz
-./tonminer-cuda -h
+mkdir tonminer-proxy
+cd tonminer-proxy
+wget https://github.com/GRinvest/tonminer/releases/download/0.1.7/tonminer-proxy.tar.gz
+tar xvf tonminer-proxy.tar.gz
+rm tonminer-proxy.tar.gz
+./tonminer-proxy -h
 </code></pre>
-<p>After starting <code>./tonminer-cuda -h</code>, you will be presented with a list of commands. Let's explore them in more detail:</p>
+<p>After starting <code>./tonminer-proxy -h</code>, you will be presented with a list of commands. Let's explore them in more detail:</p>
 
 <table border="1">
    <caption>Command table</caption>
@@ -35,10 +35,10 @@ rm tonminer-cuda.tar.gz
    <tr><td>-M</td><td>Optional Parameter. path miner-client (default: it is already in the program but you can specify your)</td></tr>
 </table>
 <p>In general, the launch command looks like this:</p>
-<pre><code>./tonminer-cuda -H 192.168.1.1 -P 8080 -W EQA1VNu5wZAWdo4MmHX8i2LWZ7mFmyu6BCh0KbwmQitEB3xC</code></pre>
+<pre><code>./tonminer-proxy -H 192.168.1.1 -P 8080 -W EQA1VNu5wZAWdo4MmHX8i2LWZ7mFmyu6BCh0KbwmQitEB3xC</code></pre>
 <hr />
 <p>If you want to run the benchmark, add the parameter<code>-B</code></p>
-<p>Example<code>./tonminer-cuda -H 192.168.1.1 -P 8080 -W EQA1VNu5wZAWdo4MmHX8i2LWZ7mFmyu6BCh0KbwmQitEB3xC -B</code></p>
+<p>Example<code>./tonminer-proxy -H 192.168.1.1 -P 8080 -W EQA1VNu5wZAWdo4MmHX8i2LWZ7mFmyu6BCh0KbwmQitEB3xC -B</code></p>
 <p>After that, run the benchmark, which will take about 30 minutes. at the end, a file will be created where you can see the results for each video card</p>
 <pre><code>nano /var/log/gpu_benchmark.json</code></pre>
 <p>Choose one optimal parameter for all maps and use it together with the command <code>-F</code></p>
@@ -52,6 +52,6 @@ rm tonminer-cuda.tar.gz
 <p>P.S. I see how the project is actively developing, so it is very interesting to start developing TON for the entire eco-system. I want to wish the developers success in this difficult matter and the entire community </p>
 <p><q>Never doubt that a small group of thoughtful, citizens can change the world. Indeed, it is the only thing that ever has.</q> - Margaret Mead</p>
 <hr />
-<p align="center"><i>Tonminer-cuda is <a href="https://github.com/GRinvest/tonminer/blob/master/LICENSE.md">BSD licensed</a> code.<br/>Designed & built in Novosibirsk, Russia.</i></p>
+<p align="center"><i>tonminer-proxy is <a href="https://github.com/GRinvest/tonminer/blob/master/LICENSE.md">BSD licensed</a> code.<br/>Designed & built in Novosibirsk, Russia.</i></p>
 
 
