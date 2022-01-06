@@ -19,7 +19,7 @@ class LiteClient:
         if timeout == 0:
             timeout = 5
         while True:
-            args = ['--global-config', State.args.сonfig,
+            args = ['--global-config', State.args.config,
                     "--verbosity", "0", '-i', str(LiteClient.STATE_INDEX), "--cmd", cmd]
             process = await asyncio.create_subprocess_exec(State.args.liteclient, *args, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
             try:
