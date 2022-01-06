@@ -10,7 +10,7 @@ from pynvml import nvmlDeviceGetCount, nvmlInit
 from app import main_tasks
 from data import State
 
-VERSION = "0.1.7"
+VERSION = "0.1.8"
 
 BASE_DIR = pathlib.Path(__file__).parent
 
